@@ -56,17 +56,29 @@ const MyStayNavbar = () => {
       setModalStateStep(step);
     }
   };
-
+ function Logo() {
+  return (
+    <div dangerouslySetInnerHTML={{ __html: `
+      <svg width="150" height="40" xmlns="http://www.w3.org/2000/svg">
+        <rect width="100%" height="100%" fill="#f87171" fill-opacity="0.9" rx="12" />
+        <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle"
+              font-family="Segoe UI, sans-serif"
+              font-size="21"
+              fill="#ffffff"
+              font-weight="600">
+          MyStay
+        </text>
+      </svg>
+    ` }} />
+  );
+}
   return (
     <nav className="bg-white border-b border-gray-200 shadow-sm py-3 px-6">
       <div className="flex items-center justify-between mx-auto">
         {/* Logo and Brand Name */}
         <a href="/" className="flex items-center space-x-2">
-          <Icons.Logo className="h-9 w-auto" />{" "}
+          <Logo className="h-9 w-auto" />{" "}
           {/* Slightly smaller logo for simplicity */}
-          <span className="self-center text-2xl font-bold text-red-400/90 whitespace-nowrap">
-            MyStay
-          </span>
         </a>
 
         {/* Interactive Search Bar Section */}
