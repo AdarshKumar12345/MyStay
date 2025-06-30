@@ -1,13 +1,20 @@
 "use client";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 import { categories } from "@/static/config";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useMemo, useState } from "react";
+import { set, useForm } from "react-hook-form";
 import useCountries from "@/hooks/useCountries";
 import CountrySelect from "./country-select";
 
 import CounterInfo from "./counter-info";
-import { Heading2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Heading2 } from "lucide-react";
+import ImageUploadComponent from "./image-fileUpload";
+import { Textarea } from "./ui/textarea";
+import { Input } from "./ui/input";
+import axios from "axios";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 const STEPS = {
   CATEGORY: 1,
@@ -18,11 +25,14 @@ const STEPS = {
   PRICE: 6,
 };
 
+
 export default function BecomeAHostComponent() {
-  const [step, setStep] = useState(STEPS.IMAGES);
+  const [step, setStep] = useState(STEPS.CATEGORY);
   const setCustomValue = (title, value) => {
     setValue(title, value);
   };
+  const router = useRouter();
+
 
   const { register, handleSubmit, setValue, watch } = useForm({
     defaultValues: {
@@ -40,6 +50,57 @@ export default function BecomeAHostComponent() {
   const roomCount = watch("roomCount");
   const childCount = watch("childCount");
   const guestCount = watch("guestCount");
+  const imageSrc = watch("imageSrc");
+
+  const isStepValid = useMemo(()=> {
+        switch(step){
+            case STEPS.CATEGORY:
+                return !!category;
+            case STEPS.LOCATION:
+                return !!location;
+            case STEPS.INFO:
+                return guestCount > 0 && roomCount > 0;
+            case STEPS.IMAGES:
+                return !!imageSrc;
+            case STEPS.DESCRIPTION:
+                return watch('title') && watch('description');
+            case STEPS.PRICE:
+                return watch('price') && parseFloat(watch('price')) > 0;
+            default: 
+                return true;
+        }
+  }, [step, category, location, roomCount, childCount, guestCount, imageSrc, watch()])
+
+  const onBack = () => {
+    setStep((step) => step - 1);
+  };
+  const onNext = (data) => {
+    console.log(data);
+    
+    if( step === STEPS.PRICE){
+        axios.post(`${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/listing`, data).then((res)=> {
+          if (res.status === 201) {
+            toast.success("Property listed successfully!");
+          }
+          router.push("/")
+
+        })
+
+    }
+    else {
+      setStep((step) => step + 1);
+    }
+  };
+  const NextLevel = useMemo(() => {
+
+    if (step == STEPS.PRICE) {
+      return <span className="flex flex-row gap-2 items-center text-white text-semibold text-md"> List <ArrowRight className="h-6 w-6 sm:h-8 sm:w-8" /></span>
+
+    }
+    else return (
+       <ArrowRight className="h-6 w-6 sm:h-8 sm:w-8" />
+    )
+  }, [step]);
 
   let sourceAtStep = (
     <div className="w-full flex flex-col item-center p-10">
@@ -134,20 +195,103 @@ export default function BecomeAHostComponent() {
       </div>
     );
   }
-  if(step === STEPS.IMAGES){
-    sourceAtStep =(
-        <div>
-            <div className=" flex items-center justify-center pt-5 "> <h1 className=" font-bold text-3xl">Upload Images of Your Property</h1></div>
-            <div>
-                
-            </div>
+  if (step === STEPS.IMAGES) {
+    sourceAtStep = (
+      <div>
+        <div className=" flex items-center justify-center pt-5 ">
+         
+          <h1 className=" font-bold text-3xl">
+            Upload Images of Your Property
+          </h1>
         </div>
-        
-    )
+        <div>
+          <ImageUploadComponent
+            value={imageSrc}
+            returnUrl={(url) => setCustomValue("imageSrc", url)}
+          />
+        </div>
+
+      </div>
+    );
+  } else if (step === STEPS.DESCRIPTION) {
+    sourceAtStep = (
+      <div className="w-full flex flex-col justify-center  max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        <div className="flex justify-center pt-4 sm:pt-5">
+          <h1 className="font-bold text-2xl sm:text-3xl text-center">
+            Describe Your Property
+          </h1>
+        </div>
+        <p className="text-gray-600 mt-2 mb-4 text-sm sm:text-base text-center px-2">
+          Provide a detailed description to help guests understand your
+          property.
+        </p>
+
+        <div className="w-full mx-auto p-4 sm:p-6 bg-white rounded-lg shadow-md">
+          <Input
+            placeholder="Title"
+            {...register("title")}
+            className="mb-4 w-full"
+          />
+          <Textarea
+            placeholder="Description for Your Property"
+            {...register("description")}
+            className="mb-4 w-full"
+          />
+        </div>
+      </div>
+    );
+  } else if (step === STEPS.PRICE) {
+    sourceAtStep = (
+      <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        <div className="flex justify-center pt-4 sm:pt-5">
+          <h1 className="font-bold text-2xl sm:text-3xl text-center">
+            Set Your Price
+          </h1>
+        </div>
+        <p className="text-gray-600 mt-2 mb-4 text-sm sm:text-base text-center px-2">
+          Set a competitive price for your property Per Night.
+        </p>
+
+        <div className="w-full mx-auto p-4 sm:p-6 bg-white rounded-lg shadow-md">
+          <Input
+            placeholder="Price"
+            {...register("price")}
+            className="mb-4 w-full"
+          />
+        </div>
+      </div>
+    );
   }
   return (
-    <section>
+    <div>
       <div>{sourceAtStep}</div>
-    </section>
+
+      <div className="fixed bottom-5 left-0 right-0 flex justify-between items-center max-w-4xl mx-auto px-4 sm:px-6 py-4 z-10">
+        <button
+          onClick={onBack}
+          aria-label="Go Back"
+          className="flex items-center justify-center border rounded-full p-2 bg-red-400/90 hover:bg-gray-200 transition-colors"
+        >
+          <ArrowLeft className="h-6 w-6 sm:h-8 sm:w-8" />
+        </button>
+        <button
+          onClick={handleSubmit(onNext)}
+          aria-label="Go Next"
+          className="flex items-center justify-center border rounded-full p-2 bg-red-400/90 hover:bg-gray-200 transition-colors disabled:opacity-50" disabled={!isStepValid}
+        >
+          {NextLevel}
+
+        </button>
+      </div>
+
+      <div className="fixed bottom-0 left-0 right-0 px-4 sm:px-6 py-2 z-0">
+        <div className="w-full bg-gray-200 rounded-full h-2.5">
+          <div
+            className="bg-red-400/90 h-2.5 rounded-full transition-all duration-300"
+            style={{ width: `${(step / Object.keys(STEPS).length) * 100}%` }}
+          ></div>
+        </div>
+      </div>
+    </div>
   );
 }

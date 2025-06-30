@@ -31,6 +31,7 @@ export default function CounterInfo({ value, onChange } ) {
       >
         <CirclePlus className="h-8 w-8 text-gray-600" />
       </button>
+      
 
 
     </div>
